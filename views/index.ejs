@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Media Converter</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            background: radial-gradient(circle at top, #3b82f6, #020617);
+        }
+
+        .glass {
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center text-white">
+
+<div class="glass w-full max-w-xl rounded-[40px] p-10 shadow-2xl">
+
+    <h1 class="text-4xl font-semibold text-center mb-3">
+        Media Converter
+    </h1>
+
+    <p class="text-center text-white/60 mb-8">
+        Convert your videos into high quality MP3
+    </p>
+
+
+    <div id="drop"
+        class="border-2 border-dashed border-white/30 rounded-3xl 
+        p-12 text-center cursor-pointer
+        hover:bg-white/10 transition">
+
+        <div class="text-5xl mb-4">
+            🎵
+        </div>
+
+        <p class="text-lg">
+            Drag & Drop your video here
+        </p>
+
+        <p class="text-sm text-white/50 mt-2">
+            or click to browse
+        </p>
+
+        <input 
+            type="file"
+            id="file"
+            accept="video/*"
+            hidden
+        >
+
+    </div>
+
+
+    <button
+        onclick="upload()"
+        class="mt-8 w-full rounded-full 
+        bg-white text-black py-4
+        font-semibold text-lg
+        hover:scale-105 transition">
+        Convert to MP3
+    </button>
+
+
+    <p id="status"
+       class="text-center mt-6 text-white/70">
+    </p>
+
+</div>
+
+
+
+<script>
+
+const drop = document.getElementById("drop");
+const input = document.getElementById("file");
+
+let selectedFile = null;
+
+
+// click upload area
+
+drop.onclick = () => {
+    input.click();
+};
+
+
+// file selected
+
+input.onchange = e => {
+
+    selectedFile = e.target.files[0];
+
+    drop.innerHTML = `
+        <div class="text-5xl mb-4">✅</div>
+        <p>${selectedFile.name}</p>
+    `;
+};
+
+
+// drag events
+
+drop.addEventListener("dragover", e => {
+    e.preventDefault();
+    drop.classList.add("bg-white/20");
+});
+
+
+drop.addEventListener("dragleave", () => {
+    drop.classList.remove("bg-white/20");
+});
+
+
+drop.addEventListener("drop", e => {
+
+    e.preventDefault();
+
+    drop.classList.remove("bg-white/20");
+
+    selectedFile = e.dataTransfer.files[0];
+
+    drop.innerHTML = `
+        <div class="text-5xl mb-4">✅</div>
+        <p>${selectedFile.name}</p>
+    `;
+});
+
+
+
+async function upload(){
+
+    if(!selectedFile){
+        alert("Choose a video first");
+        return;
+    }
+
+
+    const form = new FormData();
+
+    form.append("file", selectedFile);
+
+
+    document.getElementById("status").innerHTML =
+        "Converting...";
+
+
+    const res = await fetch("/convert",{
+        method:"POST",
+        body:form
+    });
+
+
+    if(!res.ok){
+
+        document.getElementById("status").innerHTML =
+        "Conversion failed";
+
+        return;
+    }
+
+
+    const blob = await res.blob();
+
+
+    const url = URL.createObjectURL(blob);
+
+
+    const a = document.createElement("a");
+
+    a.href = url;
+
+    a.download = "converted.mp3";
+
+    a.click();
+
+
+    URL.revokeObjectURL(url);
+
+
+    document.getElementById("status").innerHTML =
+        "Download started 🎉";
+
+}
+
+</script>
+
+
+</body>
+</html>
