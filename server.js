@@ -12,7 +12,7 @@ const app = express();
 app.set('view engine', 'ejs');
 
 if (!fs.existsSync("uploads")) {
-  fs.mkdirSync("uploads");
+  await fs.promises.mkdir("uploads")
 }
 
 if (!fs.existsSync("output")) {
