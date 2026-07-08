@@ -11,9 +11,8 @@ const app = express();
 
 app.set("view engine", "ejs");
 
-const uploadDir = path.join(__dirname, "uploads");
-const outputDir = path.join(__dirname, "output");
-
+const uploadDir = path.join("/tmp", "uploads");
+const outputDir = path.join("/tmp", "output");
 
 // Create folders safely
 if (!fs.existsSync(uploadDir)) {
@@ -143,10 +142,4 @@ app.use((err, req, res, next) => {
 
 
 // Start server
-app.listen(3000, () => {
-
-    console.log(
-        "Server running: http://localhost:3000"
-    );
-
-});
+module.exports = app
