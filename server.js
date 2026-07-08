@@ -9,10 +9,14 @@ ffmpeg.setFfmpegPath(ffmpegPath);
 
 const app = express();
 
+
+
+
 app.set("view engine", "ejs");
 
 const uploadDir = path.join("/tmp", "uploads");
 const outputDir = path.join("/tmp", "output");
+
 
 // Create folders safely
 if (!fs.existsSync(uploadDir)) {
@@ -142,4 +146,4 @@ app.use((err, req, res, next) => {
 
 
 // Start server
-module.exports = app
+app.listen(3000)
