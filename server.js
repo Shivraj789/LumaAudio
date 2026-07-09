@@ -4,99 +4,89 @@ const ffmpeg = require("fluent-ffmpeg");
 const ffmpegPath = require("ffmpeg-static");
 const path = require("path");
 const fs = require("fs");
+
 ffmpeg.setFfmpegPath(ffmpegPath);
 
 const app = express();
 
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-app.set('view engine', 'ejs');
+app.set("view engine", "ejs");
 
-if (!fs.existsSync("uploads")) {
-  fs.mkdirSync("uploads");
-}
-
-if (!fs.existsSync("output")) {
-  fs.mkdirSync("output");
-}
+["uploads", "output"].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir);
+  }
+});
 
 const upload = multer({
-  dest: "uploads/"
+  dest: "uploads/",
+  limits: {
+    fileSize: 50 * 1024 * 1024 // 50 MB
+  }
 });
 
 app.get("/", (req, res) => {
-  res.render('index')
+  res.render("index");
 });
 
 app.post("/convert", upload.single("file"), (req, res) => {
-
   if (!req.file) {
-    return res.status(400).json({
-      error: "No file uploaded"
-    });
+    return res.status(400).json({ error: "No file uploaded" });
   }
 
   const input = req.file.path;
-
   const fileName = `${Date.now()}.mp3`;
-
   const output = path.join(__dirname, "output", fileName);
 
   ffmpeg(input)
     .audioBitrate(192)
-    .toFormat("mp3")
+    .format("mp3")
     .on("end", () => {
-
-      fs.unlinkSync(input);
+      fs.unlink(input, () => {});
 
       res.json({
         success: true,
-        file: fileName,
         download: `/download/${fileName}`
       });
-
     })
     .on("error", (err) => {
-
       console.error(err);
 
-      if (fs.existsSync(input)) {
-        fs.unlinkSync(input);
-      }
+      fs.unlink(input, () => {});
 
       res.status(500).json({
         error: err.message
       });
-
     })
     .save(output);
-
 });
 
 app.get("/download/:file", (req, res) => {
-  const fileName = req.params.file;
-  const filePath = path.join(__dirname, "output", fileName);
+  const filePath = path.join(__dirname, "output", req.params.file);
 
   if (!fs.existsSync(filePath)) {
     return res.status(404).send("File not found");
   }
 
-  res.download(filePath, fileName, (err) => {
-
-    if (err) {
-      console.log("Download error:", err);
-      return;
-    }
-
-    // Delete file after download finishes
-    fs.unlink(filePath, (deleteErr) => {
-      if (deleteErr) {
-        console.log("Delete error:", deleteErr);
-      } else {
-        console.log("Deleted:", fileName);
-      }
-    });
-
+  res.download(filePath, req.params.file, () => {
+    fs.unlink(filePath, () => {});
   });
 });
 
-module.exports=app
+app.use((err, req, res, next) => {
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({
+      success: false,
+      error: err.message
+    });
+  }
+
+  res.status(500).json({
+    success: false,
+    error: err.message
+  });
+});
+
+module.exports = app;
